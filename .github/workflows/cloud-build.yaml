@@ -1,0 +1,36 @@
+name: Build using Cloud Build
+on:
+  push:
+    branches:
+    - 'main'
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+
+jobs:
+  setup-build-deploy:
+    name: Setup, Build, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Get the Google Cloud Credentials using legacy Service Account JSON Key
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GC_SA_KEY }}'
+
+    # Setup gcloud CLI
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0
+
+    # Build and push image to Google Container Registry
+    - name: Build
+      run: |-
+        gcloud builds submit \
+          --quiet \
+          --tag "gcr.io/$PROJECT_ID/$SERVICE_NAME:$GITHUB_SHA"
